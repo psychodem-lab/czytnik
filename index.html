@@ -139,8 +139,8 @@
             <h1>Wiadomości</h1>
             <nav>
                 <button onclick="loadFeed('sciencedaily')" id="btn-sciencedaily" class="active">ScienceDaily</button>
-                <button onclick="loadFeed('pap')" id="btn-pap">PAP</button>
-                <button onclick="loadFeed('cnn')" id="btn-cnn">BBC</button>
+                <button onclick="loadFeed('pap')" id="btn-pap">Polska</button>
+                <button onclick="loadFeed('cnn')" id="btn-cnn">Świat</button>
                 <button onclick="loadFeed('gazetaru')" id="btn-gazetaru">Ruskie</button>
                 <button onclick="loadFeed('RynekZdrowia')" id="btn-RynekZdrowia">RynekZdrowia</button>
                
@@ -169,10 +169,10 @@
                 'https://www.rynekzdrowia.pl/Kanal/all.xml'
             ],
             cnn: [
-                'http://feeds.bbci.co.uk/news/rss.xml'
-            ],
-            Polsat: [
-                'https://www.polsatnews.pl/rss/wszystkie.xml'
+                'http://feeds.bbci.co.uk/news/rss.xml',
+                'https://www.reutersagency.com/feed/?best-topics=political-general-news&post_type=best',
+                'https://rss.dw.com/xml/rss-pl-pol',
+                'https://www.polsatnews.pl/rss/wszystkie.xml'  
             ],
             gazetaru: [
                 'https://www.gazeta.ru/export/rss/first.xml'

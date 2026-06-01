@@ -140,6 +140,8 @@
             <nav>
                 <button onclick="loadFeed('sciencedaily')" id="btn-sciencedaily" class="active">ScienceDaily</button>
                 <button onclick="loadFeed('pap')" id="btn-pap">PAP Mediaroom</button>
+                <button onclick="loadFeed('NWP')" id="btn-NWP">PAP Nauka</button>
+                <button onclick="loadFeed('RynekZdrowia')" id="btn-RynekZdrowia">Rynek Zdrowia</button>
             </nav>
         </header>
         
@@ -151,7 +153,9 @@
         // Konfiguracja adresów RSS - zaktualizowana o nowy adres PAP
         const feeds = {
             sciencedaily: 'https://www.sciencedaily.com/rss/all.xml',
-            pap: 'https://pap-mediaroom.pl/rss.xml'
+            pap: 'https://pap-mediaroom.pl/rss.xml',
+            NwP: 'https://naukawpolsce.pl/all/rss.xml',
+            RynekZdrowia: 'https://www.rynekzdrowia.pl/Kanal/all.xml', 
         };
 
         // Funkcja do bezpiecznego parsowania różnych formatów dat (w tym specyficznego formatu PAP)

@@ -139,7 +139,7 @@
             <h1>Wiadomości</h1>
             <nav>
                 <button onclick="loadFeed('sciencedaily')" id="btn-sciencedaily" class="active">ScienceDaily</button>
-                <button onclick="loadFeed('pap')" id="btn-pap">PAP</button>
+                <button onclick="loadFeed('pap')" id="btn-pap">PAP Mediaroom</button>
             </nav>
         </header>
         
@@ -148,34 +148,61 @@
     </div>
 
     <script>
-        // Konfiguracja adresów RSS dla wybranych stron
+        // Konfiguracja adresów RSS - zaktualizowana o nowy adres PAP
         const feeds = {
             sciencedaily: 'https://www.sciencedaily.com/rss/all.xml',
-            pap: 'https://www.pap.pl/aktualnosci/rss.xml'
+            pap: 'https://pap-mediaroom.pl/rss.xml'
         };
+
+        // Funkcja do bezpiecznego parsowania różnych formatów dat (w tym specyficznego formatu PAP)
+        function parseFeedDate(dateStr) {
+            if (!dateStr) return 'Brak daty';
+
+            // Obsługa formatu PAP: "pon., 06/01/2026 - 16:00"
+            if (dateStr.includes('/')) {
+                const match = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+                if (match) {
+                    // PAP podaje miesiąc/dzień/rok (06/01 to 1 czerwca)
+                    const dateObj = new Date(`${match[3]}-${match[1]}-${match[2]}`);
+                    if (!isNaN(dateObj)) return formatDate(dateObj);
+                }
+            }
+
+            // Standardowe parsowanie dla innych serwisów
+            const dateObj = new Date(dateStr);
+            if (!isNaN(dateObj)) {
+                return formatDate(dateObj);
+            }
+
+            // Ostateczny fallback - wyczyszczenie skrótu dnia tygodnia
+            return dateStr.replace(/^[a-złżóćęąśń.,\s]+/i, '');
+        }
+
+        function formatDate(dateObj) {
+            return dateObj.toLocaleDateString('pl-PL', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
 
         async function loadFeed(sourceKey) {
             const feedUrl = feeds[sourceKey];
             const loader = document.getElementById('loader');
             const feedContainer = document.getElementById('feed');
             
-            // Zmiana aktywnego przycisku w menu
             document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`btn-${sourceKey}`).classList.add('active');
 
-            // Pokazanie loadera i czyszczenie starej treści
             loader.style.display = 'block';
             feedContainer.innerHTML = '';
 
             try {
-                // Zapytanie do API przekształcającego RSS na JSON (omijanie CORS)
                 const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`);
-                
-                if (!response.ok) throw new Error('Nie udało się pobrać danych z zewnętrznego serwera.');
+                if (!response.ok) throw new Error('Nie udało się pobrać danych.');
                 
                 const data = await response.json();
-                
-                if (data.status !== 'ok') throw new Error('Błąd podczas przetwarzania strumienia wiadomości.');
+                if (data.status !== 'ok') throw new Error('Błąd przetwarzania strumienia.');
 
                 loader.style.display = 'none';
                 
@@ -184,18 +211,13 @@
                     return;
                 }
 
-                // Generowanie elementów HTML dla każdego artykułu
                 data.items.forEach(item => {
                     const article = document.createElement('article');
                     
-                    // Formatowanie daty
-                    const pubDate = new Date(item.pubDate).toLocaleDateString('pl-PL', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                    });
+                    // Użycie nowego parsera daty
+                    const pubDate = parseFeedDate(item.pubDate);
 
-                    // Oczyszczanie opisu z tagów HTML (jeśli istnieją w RSS) dla zachowania minimalizmu
+                    // Czyszczenie opisu (część artykułów PAP nie ma opisu – kod to uwzględnia)
                     let cleanDescription = item.description || '';
                     cleanDescription = cleanDescription.replace(/<[^>]*>/g, '').trim();
 
@@ -214,12 +236,11 @@
                 feedContainer.innerHTML = `
                     <div class="error-msg">
                         <p><strong>Wystąpił problem:</strong> ${error.message}</p>
-                        <small>Upewnij się, że masz połączenie z internetem lub że adres RSS serwisu nie uległ zmianie.</small>
+                        <small>Upewnij się, że adres RSS jest poprawny lub spróbuj ponownie później.</small>
                     </div>`;
             }
         }
 
-        // Automatyczne załadowanie pierwszego źródła po starcie strony
         window.onload = () => {
             loadFeed('sciencedaily');
         };

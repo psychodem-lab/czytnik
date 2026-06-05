@@ -150,7 +150,8 @@
     </div>
 
     <script>
-        // TERAZ KAŻDE ŹRÓDŁO TO LISTA (TABLICA []). Możesz dopisać przecinek i kolejny link XML wewnątrz nawiasów kwadratowych.
+       
+        // Słownik źródeł RSS
         const feeds = {
             sciencedaily: [
                 'https://www.sciencedaily.com/rss/all.xml'
@@ -164,14 +165,12 @@
                 'https://pap-mediaroom.pl/kalendarium/rss.xml',
                 'https://rss.dw.com/xml/rss-pl-pol',
                 'https://www.polsatnews.pl/rss/wszystkie.xml',  
-
-'https://news.google.com/rss?hl=pl&gl=PL&ceid=PL:pl',
+                'https://news.google.com/rss?hl=pl&gl=PL&ceid=PL:pl',
                 'https://www.rynekzdrowia.pl/Kanal/all.xml'
             ],
             cnn: [
                 'http://feeds.bbci.co.uk/news/rss.xml',
-
-'https://news.google.com/rss/search?q=site%3Areuters.com%20when%3A1h&hl=en-US&gl=US&ceid=US%3Aen',
+                'https://news.google.com/rss/search?q=site%3Areuters.com%20when%3A1h&hl=en-US&gl=US&ceid=US%3Aen',
                 'https://www.reutersagency.com/feed/?best-topics=political-general-news&post_type=best'
             ],
             gazetaru: [
@@ -179,11 +178,53 @@
             ]
         };
 
-        // Funkcja pomocnicza zamieniająca nieregularne daty na znaczniki czasu (timestamp) do poprawnego sortowania chronologicznego
+        // --- OBSŁUGA GESTÓW PRZESUWANIA (SWIPE) ---
+        let touchstartX = 0;
+        let touchstartY = 0;
+        let touchendX = 0;
+        let touchendY = 0;
+
+        document.addEventListener('touchstart', e => {
+            touchstartX = e.changedTouches[0].screenX;
+            touchstartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', e => {
+            touchendX = e.changedTouches[0].screenX;
+            touchendY = e.changedTouches[0].screenY;
+            handleGesture();
+        }, { passive: true });
+
+        function handleGesture() {
+            const diffX = touchendX - touchstartX;
+            const diffY = touchendY - touchstartY;
+            const swipeThreshold = 60; // Minimalna odległość w pikselach dla wyzwolenia gestu
+
+            // Sprawdzamy czy ruch był bardziej horyzontalny niż wertykalny i czy przekroczył próg
+            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > swipeThreshold) {
+                const keys = Object.keys(feeds);
+                const activeBtn = document.querySelector('nav button.active');
+                if (!activeBtn) return;
+                
+                const currentKey = activeBtn.id.replace('btn-', '');
+                let currentIndex = keys.indexOf(currentKey);
+                
+                if (diffX > 0) {
+                    // Przesunięcie w prawo -> poprzednia kategoria
+                    currentIndex = (currentIndex - 1 + keys.length) % keys.length;
+                } else {
+                    // Przesunięcie w lewo -> następna kategoria
+                    currentIndex = (currentIndex + 1) % keys.length;
+                }
+                
+                loadFeed(keys[currentIndex]);
+            }
+        }
+        // --- KONIEC OBSŁUGI GESTÓW ---
+
+        // Funkcja pomocnicza zamieniająca nieregularne daty na znaczniki czasu (timestamp)
         function getTimestamp(dateStr) {
             if (!dateStr) return 0;
-            
-            // Obsługa formatu PAP: "pon., 06/01/2026 - 16:00"
             if (dateStr.includes('/')) {
                 const match = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
                 if (match) {
@@ -198,7 +239,6 @@
         // Formatowanie daty do wyświetlenia użytkownikowi
         function parseFeedDate(dateStr) {
             if (!dateStr) return 'Brak daty';
-
             if (dateStr.includes('/')) {
                 const match = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
                 if (match) {
@@ -231,12 +271,13 @@
 
             loader.style.display = 'block';
             feedContainer.innerHTML = '';
-
+            
             try {
                 // Równoległe pobieranie wszystkich linków przypisanych do wybranego klucza
                 const fetchPromises = urls.map(async (url) => {
                     try {
                         const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`);
+    
                         if (!response.ok) return null;
                         const data = await response.json();
                         return data.status === 'ok' ? data.items : null;
@@ -244,7 +285,6 @@
                         return null; // Jeśli jeden z linków padnie, reszta i tak się załaduje
                     }
                 });
-
                 const results = await Promise.all(fetchPromises);
                 
                 // Łączenie wszystkich pobranych artykułów w jedną wspólną listę
@@ -252,7 +292,6 @@
                 results.forEach(items => {
                     if (items) combinedItems = combinedItems.concat(items);
                 });
-
                 loader.style.display = 'none';
                 
                 if (combinedItems.length === 0) {
@@ -260,9 +299,9 @@
                     return;
                 }
 
-                // KLUCZOWY MOMENT: Sortowanie wszystkich połączonych artykułów od najnowszego do najstarszego
+                // Sortowanie wszystkich połączonych artykułów od najnowszego do najstarszego
                 combinedItems.sort((a, b) => getTimestamp(b.pubDate) - getTimestamp(a.pubDate));
-
+                
                 // Renderowanie posortowanej listy
                 combinedItems.forEach(item => {
                     const article = document.createElement('article');
@@ -280,7 +319,6 @@
                     `;
                     feedContainer.appendChild(article);
                 });
-
             } catch (error) {
                 loader.style.display = 'none';
                 feedContainer.innerHTML = `

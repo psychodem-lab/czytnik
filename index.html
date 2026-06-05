@@ -135,7 +135,7 @@
 <body>
 
     <div class="container">
-        <header>
+        <header translate="no">
             <h1>Wiadomości</h1>
             <nav>
                 <button onclick="loadFeed('sciencedaily')" id="btn-sciencedaily" class="active">ScienceDaily</button>
@@ -145,13 +145,12 @@
             </nav>
         </header>
         
-        <div id="loader" class="loader">Wczytywanie artykułów z wielu źródeł...</div>
+        <div id="loader" class="loader" translate="no">Wczytywanie artykułów...</div>
         <main id="feed" class="feed-container"></main>
     </div>
 
     <script>
        
-        // Słownik źródeł RSS
         const feeds = {
             sciencedaily: [
                 'https://www.sciencedaily.com/rss/all.xml'
@@ -178,7 +177,15 @@
             ]
         };
 
-        // --- OBSŁUGA GESTÓW PRZESUWANIA (SWIPE) ---
+        // Mapa języków dla poszczególnych kategorii wiadomości
+        const feedLanguages = {
+            sciencedaily: 'en',
+            pap: 'pl',
+            cnn: 'en',
+            gazetaru: 'ru'
+        };
+
+        // --- OBSŁUGA GESTÓW ---
         let touchstartX = 0;
         let touchstartY = 0;
         let touchendX = 0;
@@ -198,9 +205,8 @@
         function handleGesture() {
             const diffX = touchendX - touchstartX;
             const diffY = touchendY - touchstartY;
-            const swipeThreshold = 60; // Minimalna odległość w pikselach dla wyzwolenia gestu
+            const swipeThreshold = 60;
 
-            // Sprawdzamy czy ruch był bardziej horyzontalny niż wertykalny i czy przekroczył próg
             if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > swipeThreshold) {
                 const keys = Object.keys(feeds);
                 const activeBtn = document.querySelector('nav button.active');
@@ -210,19 +216,16 @@
                 let currentIndex = keys.indexOf(currentKey);
                 
                 if (diffX > 0) {
-                    // Przesunięcie w prawo -> poprzednia kategoria
                     currentIndex = (currentIndex - 1 + keys.length) % keys.length;
                 } else {
-                    // Przesunięcie w lewo -> następna kategoria
                     currentIndex = (currentIndex + 1) % keys.length;
                 }
                 
                 loadFeed(keys[currentIndex]);
             }
         }
-        // --- KONIEC OBSŁUGI GESTÓW ---
 
-        // Funkcja pomocnicza zamieniająca nieregularne daty na znaczniki czasu (timestamp)
+        // --- POMOCNICZE FUNKCJE DAT ---
         function getTimestamp(dateStr) {
             if (!dateStr) return 0;
             if (dateStr.includes('/')) {
@@ -231,12 +234,10 @@
                     return new Date(`${match[3]}-${match[1]}-${match[2]}`).getTime();
                 }
             }
-            
             const d = new Date(dateStr);
             return isNaN(d.getTime()) ? 0 : d.getTime();
         }
 
-        // Formatowanie daty do wyświetlenia użytkownikowi
         function parseFeedDate(dateStr) {
             if (!dateStr) return 'Brak daty';
             if (dateStr.includes('/')) {
@@ -246,10 +247,8 @@
                     if (!isNaN(dateObj)) return formatDate(dateObj);
                 }
             }
-
             const dateObj = new Date(dateStr);
             if (!isNaN(dateObj)) return formatDate(dateObj);
-
             return dateStr.replace(/^[a-złżóćęąśń.,\s]+/i, '');
         }
 
@@ -261,6 +260,7 @@
             });
         }
 
+        // --- GŁÓWNA FUNKCJA POBIERANIA ---
         async function loadFeed(sourceKey) {
             const urls = feeds[sourceKey];
             const loader = document.getElementById('loader');
@@ -272,22 +272,23 @@
             loader.style.display = 'block';
             feedContainer.innerHTML = '';
             
+            // Dynamicznie informujemy przeglądarkę o zmianie języka treści
+            const currentLang = feedLanguages[sourceKey] || 'pl';
+            document.documentElement.setAttribute('lang', currentLang);
+            
             try {
-                // Równoległe pobieranie wszystkich linków przypisanych do wybranego klucza
                 const fetchPromises = urls.map(async (url) => {
                     try {
                         const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`);
-    
                         if (!response.ok) return null;
                         const data = await response.json();
                         return data.status === 'ok' ? data.items : null;
                     } catch (e) {
-                        return null; // Jeśli jeden z linków padnie, reszta i tak się załaduje
+                        return null;
                     }
                 });
                 const results = await Promise.all(fetchPromises);
                 
-                // Łączenie wszystkich pobranych artykułów w jedną wspólną listę
                 let combinedItems = [];
                 results.forEach(items => {
                     if (items) combinedItems = combinedItems.concat(items);
@@ -299,10 +300,8 @@
                     return;
                 }
 
-                // Sortowanie wszystkich połączonych artykułów od najnowszego do najstarszego
                 combinedItems.sort((a, b) => getTimestamp(b.pubDate) - getTimestamp(a.pubDate));
                 
-                // Renderowanie posortowanej listy
                 combinedItems.forEach(item => {
                     const article = document.createElement('article');
                     const pubDate = parseFeedDate(item.pubDate);
@@ -310,8 +309,9 @@
                     let cleanDescription = item.description || '';
                     cleanDescription = cleanDescription.replace(/<[^>]*>/g, '').trim();
 
+                    // translate="no" na sekcji meta chroni polski format daty przed zniekształceniem
                     article.innerHTML = `
-                        <div class="article-meta">${pubDate}</div>
+                        <div class="article-meta" translate="no">${pubDate}</div>
                         <h2 class="article-title">
                             <a href="${item.link}" target="_blank" rel="noopener noreferrer">${item.title}</a>
                         </h2>

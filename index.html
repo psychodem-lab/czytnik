@@ -140,6 +140,7 @@
             <nav>
                 <button onclick="loadFeed('sciencedaily')" id="btn-sciencedaily" class="active">ScienceDaily</button>
                 <button onclick="loadFeed('pap')" id="btn-pap">Polska</button>
+               <button onclick="loadFeed('pl2')" id="btn-pl2">Polska2</button>
                 <button onclick="loadFeed('cnn')" id="btn-cnn">Świat</button>
                 <button onclick="loadFeed('gazetaru')" id="btn-gazetaru">Ruskie</button>               
             </nav>
@@ -163,8 +164,6 @@
                 'https://pap-mediaroom.pl/kategoria/biznes-i-finanse/rss.xml',
                 'https://pap-mediaroom.pl/kalendarium/rss.xml',
                 'https://rss.dw.com/xml/rss-pl-pol',
-                'https://www.polsatnews.pl/rss/wszystkie.xml',  
-                'https://news.google.com/rss?hl=pl&gl=PL&ceid=PL:pl',
 
 'https://www.polsatsport.pl/rss/wszystkie.xml',
                 'https://www.rynekzdrowia.pl/Kanal/all.xml'
@@ -176,7 +175,14 @@
             ],
             gazetaru: [
                 'https://www.gazeta.ru/export/rss/first.xml'
+            ],
+            pl2: [
+  
+'https://www.polsatnews.pl/rss/wszystkie.xml',  
+                'https://news.google.com/rss?hl=pl&gl=PL&ceid=PL:pl'
             ]
+
+
         };
 
         // Mapa języków dla poszczególnych kategorii wiadomości
